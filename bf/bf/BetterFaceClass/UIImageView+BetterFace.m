@@ -28,12 +28,12 @@ void hack_uiimageview_bf(){
 }
 
 - (void)setBetterFaceImage:(UIImage *)image{
-    [self setBetterFaceImage:image];
     if (![self needsBetterFace]) {
-        return;
+        [self setBetterFaceImage:image];
     }
-    
-    [self faceDetect:image];
+    else {
+        [self faceDetect:image];
+    }
 }
 
 char nbfKey;
@@ -86,27 +86,28 @@ char detectorKey;
             NSDictionary  *opts = [NSDictionary dictionaryWithObject:[self fast] ? CIDetectorAccuracyLow : CIDetectorAccuracyHigh
                                                               forKey:CIDetectorAccuracy];
             detector = [CIDetector detectorOfType:CIDetectorTypeFace
-                                                      context:nil
-                                                      options:opts];
+                                          context:nil
+                                          options:opts];
         }
         
         NSArray* features = [detector featuresInImage:image];
-        
         if ([features count] == 0) {
-            BFLog(@"no faces");
             dispatch_async(dispatch_get_main_queue(), ^{
+                BFLog(@"no faces");
+                [self setBetterFaceImage:aImage];
                 [[self imageLayer] removeFromSuperlayer];
             });
         } else {
             BFLog(@"succeed %lu faces", (unsigned long)[features count]);
             [self markAfterFaceDetect:features
                                  size:CGSizeMake(CGImageGetWidth(aImage.CGImage),
-                                                 CGImageGetHeight(aImage.CGImage))];
+                                                 CGImageGetHeight(aImage.CGImage))
+                            withImage:aImage];
         }
     });
 }
 
--(void)markAfterFaceDetect:(NSArray *)features size:(CGSize)size{
+-(void)markAfterFaceDetect:(NSArray *)features size:(CGSize)size withImage:(UIImage*) aImage{
     CGRect fixedRect = CGRectMake(MAXFLOAT, MAXFLOAT, 0, 0);
     CGFloat rightBorder = 0, bottomBorder = 0;
     for (CIFaceFeature *f in features){
@@ -163,7 +164,7 @@ char detectorKey;
                                  offset.y,
                                  finalSize.width,
                                  finalSize.height);
-        layer.contents = (id)self.image.CGImage;
+        layer.contents = (id)aImage.CGImage;
     });
 }
 
